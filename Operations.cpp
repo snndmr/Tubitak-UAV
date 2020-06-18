@@ -32,6 +32,7 @@ bool Operations::capture(const char *camId) {
 	char key;
 	bool isPaused = false;
 
+	int64 beg;
 	Mat frame;
 	vector<vector<Point>> approx, contours;
 
@@ -42,7 +43,7 @@ bool Operations::capture(const char *camId) {
 		if(key == 32) { isPaused = !isPaused; }
 
 		if(!isPaused) {
-			int64 start = getTickCount();
+			beg = getTickCount();
 			capture.read(frame);
 			if(frame.empty()) { break; }
 
@@ -58,10 +59,10 @@ bool Operations::capture(const char *camId) {
 					findShape(frame, contours[i], approx[i]);
 				}
 			}
-			putText(frame, format("FPS: %.2lf | Detected Object(s): %d", getTickFrequency() / (getTickCount() - start), approx.size()),
-					Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
+			putText(frame, format("Fps: %.2lf | Objects: %d", getTickFrequency() / (getTickCount() - beg), approx.size()),
+					Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 155, 255), 2);
 		} else {
-			putText(frame, format("Paused"), Point(10, 80), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
+			putText(frame, format("Paused"), Point(10, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 155, 255), 2);
 		}
 		imshow(WINDOW_NAME_MAIN, frame);
 	}
