@@ -18,7 +18,7 @@ void Operations::findShape(Mat frame, vector<Point> &contour, vector<Point> &app
 
 	RotatedRect rect = minAreaRect(contour);
 	putText(frame, format("%s", approx.size() == 4 ? "Rectangle" : "N/A"),
-			Point2f(rect.center.x, rect.center.y), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 155, 255), 2);
+			Point2f(rect.center.x, rect.center.y), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
 }
 
 bool Operations::capture(const char *camId) {
@@ -42,10 +42,12 @@ bool Operations::capture(const char *camId) {
 		if(key == 32) { isPaused = !isPaused; }
 
 		if(!isPaused) {
+			int64 start = getTickCount();
 			capture.read(frame);
 			if(frame.empty()) { break; }
 
 			Mat pre = findColor(frame, lowerBoundBlue, upperBoundBlue);
+			imshow(WINDOW_NAME_PREP, pre);
 
 			if(sum(frame)[0] > MIN_AREA) {
 				findContours(pre, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -56,12 +58,12 @@ bool Operations::capture(const char *camId) {
 					findShape(frame, contours[i], approx[i]);
 				}
 			}
-			imshow(WINDOW_NAME_PREP, pre);
-			imshow(WINDOW_NAME_MAIN, frame);
+			putText(frame, format("FPS: %.2lf | Detected Object(s): %d", getTickFrequency() / (getTickCount() - start), approx.size()),
+					Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
 		} else {
-			putText(frame, format("Paused"), Point2f(10, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 155, 255), 2);
-			imshow(WINDOW_NAME_MAIN, frame);
+			putText(frame, format("Paused"), Point(10, 80), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
 		}
+		imshow(WINDOW_NAME_MAIN, frame);
 	}
 	return EXIT_SUCCESS;
 }
