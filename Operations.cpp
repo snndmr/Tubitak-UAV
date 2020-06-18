@@ -1,10 +1,10 @@
 #include "Operations.h"
 
-Mat Operations::findColor(Mat image) {
+Mat Operations::findColor(Mat image, const Scalar &lowerBound, const Scalar &upperBound) {
 	Mat hsv, mask, output;
 
 	cvtColor(image, hsv, COLOR_BGR2HSV);
-	inRange(hsv, lowerBoundBlue, upperBoundBlue, mask);
+	inRange(hsv, lowerBound, upperBound, mask);
 
 	copyTo(image, output, mask);
 	cvtColor(output, output, COLOR_BGR2GRAY);
@@ -17,8 +17,8 @@ void Operations::findShape(Mat frame, vector<Point> &contour, vector<Point> &app
 	approxPolyDP(contour, approx, 0.04 * length, true);
 
 	RotatedRect rect = minAreaRect(contour);
-	putText(frame, format(". %s", approx.size() == 4 ? "Rect" : "N/A"),
-			Point2f(rect.center.x, rect.center.y), FONT_HERSHEY_DUPLEX, 1.8, Scalar(0, 155, 255), 3);
+	putText(frame, format("%s", approx.size() == 4 ? "Rectangle" : "N/A"),
+			Point2f(rect.center.x, rect.center.y), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 155, 255), 2);
 }
 
 bool Operations::capture(const char *camId) {
@@ -33,31 +33,35 @@ bool Operations::capture(const char *camId) {
 	bool isPaused = false;
 
 	Mat frame;
-	vector<vector<Point>> approx;
-	vector<vector<Point>> contours;
+	vector<vector<Point>> approx, contours;
 
-	do {
+	while(true) {
 		key = waitKey(1);
 
-		if(key == ' ') { isPaused = !isPaused; }
-		if(isPaused) { continue; }
+		if(key == 27) { break; }
+		if(key == 32) { isPaused = !isPaused; }
 
-		capture.read(frame);
-		if(frame.empty()) { break; }
+		if(!isPaused) {
+			capture.read(frame);
+			if(frame.empty()) { break; }
 
-		Mat pre = findColor(frame);
+			Mat pre = findColor(frame, lowerBoundBlue, upperBoundBlue);
 
-		if(sum(frame)[0] > MIN_AREA) {
-			findContours(pre, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-			approx.resize(contours.size());
+			if(sum(frame)[0] > MIN_AREA) {
+				findContours(pre, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+				approx.resize(contours.size());
 
-			for(int i = 0; i < contours.size(); i++) {
-				drawContours(frame, contours, i, Scalar(0, 255, 155), 3);
-				findShape(frame, contours[i], approx[i]);
+				for(int i = 0; i < contours.size(); i++) {
+					drawContours(frame, contours, i, Scalar(0, 255, 155), 3);
+					findShape(frame, contours[i], approx[i]);
+				}
 			}
+			imshow(WINDOW_NAME_PREP, pre);
+			imshow(WINDOW_NAME_MAIN, frame);
+		} else {
+			putText(frame, format("Paused"), Point2f(10, 50), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 155, 255), 2);
+			imshow(WINDOW_NAME_MAIN, frame);
 		}
-		imshow(WINDOW_NAME_PREP, pre);
-		imshow(WINDOW_NAME_MAIN, frame);
-	} while(key != 27);
+	}
 	return EXIT_SUCCESS;
 }
