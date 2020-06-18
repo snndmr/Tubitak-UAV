@@ -29,7 +29,7 @@ void Operations::findShape(Mat frame, vector<Point> &contour, vector<Point> &app
 		text = "Circle";
 	}
 	putText(frame, text, Point2f(rect.center.x, rect.center.y), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
-	putText(frame, format("%d", approx.size()), Point(10, 120), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
+	putText(frame, format("Type: %d", approx.size()), Point(10, 80), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
 }
 
 bool Operations::capture(const char *camId) {
@@ -40,21 +40,20 @@ bool Operations::capture(const char *camId) {
 		return EXIT_FAILURE;
 	}
 
+	int lastFps = 0;
+	int fps = 0;
+
 	char key;
 	bool isPaused = false;
 
-	int64 beg;
 	Mat frame;
 	vector<vector<Point>> approx, contours;
 
-	while(true) {
+	clock_t beg = clock();
+	do {
 		key = waitKey(1);
-
-		if(key == 27) { break; }
 		if(key == 32) { isPaused = !isPaused; }
-
 		if(!isPaused) {
-			beg = getTickCount();
 			capture.read(frame);
 			if(frame.empty()) { break; }
 
@@ -69,14 +68,19 @@ bool Operations::capture(const char *camId) {
 					drawContours(frame, contours, i, Scalar(0, 255, 155), 3);
 					findShape(frame, contours[i], approx[i]);
 				}
+				putText(frame, format("Fps: %d", lastFps), Point(10, 90), FONT_HERSHEY_SIMPLEX, 4, Scalar(0, 155, 255), 4);
 			}
-
-			putText(frame, format("Fps: %.2lf | Objects: %d", getTickFrequency() / (getTickCount() - beg), approx.size()),
-					Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
 		} else {
-			putText(frame, format("Paused"), Point(10, 80), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
+			putText(frame, format("Paused"), Point(10, 40), FONT_HERSHEY_SIMPLEX, 0.8, Scalar(0, 155, 255), 2);
 		}
 		imshow(WINDOW_NAME_MAIN, frame);
-	}
+		fps += 1;
+
+		if(clock() - beg >= 1000) {
+			beg = clock();
+			lastFps = fps;
+			fps = 0;
+		}
+	} while(key != 27);
 	return EXIT_SUCCESS;
 }

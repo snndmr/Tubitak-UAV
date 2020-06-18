@@ -17,10 +17,10 @@ class Operations {
 	const char *WINDOW_NAME_MAIN = "Window Main";
 	const char *WINDOW_NAME_PREP = "Window Prep";
 
-	const Scalar lowerBoundRed = Scalar(160, 100, 80);
-	const Scalar upperBoundRed = Scalar(180, 255, 255);
-	const Scalar lowerBoundBlue = Scalar(90, 155, 155);
-	const Scalar upperBoundBlue = Scalar(130, 255, 255);
+	const Scalar lowerBoundRed = Scalar(160, 93, 100);
+	const Scalar upperBoundRed = Scalar(175, 200, 200);
+	const Scalar lowerBoundBlue = Scalar(95, 160, 180);
+	const Scalar upperBoundBlue = Scalar(110, 255, 255);
 
 	Mat findColor(Mat, const Scalar &, const Scalar &, const Scalar &, const Scalar &);
 	void findShape(Mat, vector<Point> &, vector<Point> &);
