@@ -1,5 +1,6 @@
-#include "Operations.h"
+#include "Operation.h"
 
 int main(int argc, const char *argv[]) {
-	return Operations().capture(argv[1]);
+	Operation operation(argv[1]);
+	return EXIT_SUCCESS;
 }

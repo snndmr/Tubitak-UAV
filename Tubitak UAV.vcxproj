@@ -19,11 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FPS.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Operations.cpp" />
+    <ClCompile Include="Operation.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Operations.h" />
+    <ClInclude Include="FPS.h" />
+    <ClInclude Include="Operation.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
