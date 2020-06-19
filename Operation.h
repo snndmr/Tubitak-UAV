@@ -9,7 +9,7 @@ using namespace std;
 
 class Operation {
 	public:
-	Operation(const char *);
+	Operation(VideoCapture &);
 	~Operation();
 
 	private:
@@ -23,8 +23,8 @@ class Operation {
 
 	VideoCapture capture;
 
-	void process(Mat &);
 	Mat findColor(Mat, const Scalar &, const Scalar &, const Scalar &, const Scalar &);
 	void findShape(Mat, vector<Point> &, vector<Point> &);
+	void process(Mat &);
 };
 
