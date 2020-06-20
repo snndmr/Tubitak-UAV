@@ -1,17 +1,22 @@
 #pragma once
+
 #include <time.h>
 
 class FPS {
 	private:
-	double avgdur;
-	double avgfps;
-	double fps1sec;
-	double fpsstart;
+
+	double fps1Sec;
+	double fpsStart;
+	double avarageFps;
+	double avarageDuration;
 
 	public:
+
 	FPS();
 	~FPS();
-	double averagedur(double);
-	double averagefps();
+
+	double calcAvgFps();
+	double calcAvgDur(double);
+	double getAvarageFps();
 };
 

@@ -1,20 +1,20 @@
 #include "FPS.h"
 
-FPS::FPS() : avgdur(0), avgfps(0), fps1sec(0), fpsstart(0) {}
+FPS::FPS() : avarageDuration(0), avarageFps(0), fps1Sec(0), fpsStart(0) {}
 
-double FPS::averagedur(double newdur) {
-	return 0.98 * avgdur + 0.02 * newdur;
-}
-
-double FPS::averagefps() {
-	if(clock() - fpsstart >= 1000) {
-		fpsstart = clock();
-		avgfps = 0.7 * avgfps + 0.3 * fps1sec;
-		fps1sec = 0;
+double FPS::calcAvgFps() {
+	if(clock() - fpsStart >= 1000) {
+		fpsStart = clock();
+		avarageFps = 0.7 * avarageFps + 0.3 * fps1Sec;
+		fps1Sec = 0;
 	}
-	fps1sec++;
-	return avgfps;
+	fps1Sec += 1;
+	return avarageFps;
 }
+
+double FPS::calcAvgDur(double newdur) { return 0.98 * avarageDuration + 0.02 * newdur; }
+
+double FPS::getAvarageFps() { return avarageFps; }
 
 FPS::~FPS() {}
 

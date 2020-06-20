@@ -3,8 +3,11 @@
 #include <iostream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core/utils/logger.hpp>
 
 using namespace cv;
+using namespace cv::utils::logging;
+using namespace cv::utils::logging::internal;
 using namespace std;
 
 class Operation {

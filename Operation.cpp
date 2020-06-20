@@ -2,10 +2,10 @@
 #include "Operation.h"
 
 Operation::Operation(VideoCapture &capture) : capture(capture) {
-	char	key = NULL;
+	char	key;
+	double  beg;
+	double  dur;
 	bool	isPaused = false;
-	double  beg = 0.0;
-	double  dur = 0.0;
 
 	FPS fps;
 	Mat frame;
@@ -16,13 +16,18 @@ Operation::Operation(VideoCapture &capture) : capture(capture) {
 
 		if(!isPaused) {
 			beg = clock();
-			if(!capture.read(frame)) { break; }
+			if(!capture.read(frame)) {
+				writeLogMessage(LOG_LEVEL_INFO, format("Frame could not be loaded").c_str());
+				break;
+			}
 			process(frame);
 			dur = clock() - beg;
 
-			putText(frame, format("FPS : %.1lf", fps.averagefps()), Point(10, 30), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
-			putText(frame, format("Frame Rate : %.2lf ms.", fps.averagedur(dur)), Point(10, 60), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+			putText(frame, format("FPS : %.1lf", fps.calcAvgFps()), Point(10, 30), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+			putText(frame, format("Frame Rate : %.2lf ms.", fps.calcAvgDur(dur)), Point(10, 60), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
 			putText(frame, format("Frame No : %d", frameNo), Point(10, 90), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+			writeLogMessage(LOG_LEVEL_INFO, format("FPS : %5.1lf | Frame Rate : %5.2lf ms. | Frame No : %5d",
+												   fps.getAvarageFps(), fps.calcAvgDur(dur), frameNo).c_str());
 		} else {
 			putText(frame, format("Paused"), Point2f(10, 150), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
 		}
@@ -32,7 +37,7 @@ Operation::Operation(VideoCapture &capture) : capture(capture) {
 
 void Operation::process(Mat &frame) {
 	Mat pre = findColor(frame);
-	imshow("Preprocess", pre);
+	//imshow(WINDOW_NAME_PREP, pre);
 
 	vector<vector<Point>> approx, contours;
 	findContours(pre, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
