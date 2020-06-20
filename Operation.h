@@ -16,6 +16,7 @@ class Operation {
 	const float MIN_AREA = 1e3;
 	const char *WINDOW_NAME_MAIN = "Window Main";
 	const char *WINDOW_NAME_PREP = "Window Prep";
+
 	const Scalar lowerBoundRed = Scalar(160, 93, 100);
 	const Scalar upperBoundRed = Scalar(175, 200, 200);
 	const Scalar lowerBoundBlue = Scalar(95, 160, 180);
@@ -23,8 +24,8 @@ class Operation {
 
 	VideoCapture capture;
 
-	Mat findColor(Mat, const Scalar &, const Scalar &, const Scalar &, const Scalar &);
-	void findShape(Mat, vector<Point> &, vector<Point> &);
 	void process(Mat &);
+	Mat findColor(Mat &);
+	void findShape(Mat &, vector<Point> &, vector<Point> &);
 };
 
