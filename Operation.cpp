@@ -1,7 +1,7 @@
 #include "FPS.h"
 #include "Operation.h"
 
-Operation::Operation(VideoCapture &capture) : capture(capture) {
+Operation::Operation(VideoCapture &capture) {
 	char	key;
 	double  beg;
 	double  dur;
@@ -11,8 +11,15 @@ Operation::Operation(VideoCapture &capture) : capture(capture) {
 	Mat frame;
 
 	for(int frameNo = 0; key = waitKey(1); frameNo += 1) {
-		if(key == 27) { break; }
-		if(key == 32) { isPaused = !isPaused; }
+		if(key == 27) {
+			writeLogMessage(LOG_LEVEL_DEBUG, format("ESC pressed").c_str());
+			break;
+		}
+
+		if(key == 32) {
+			writeLogMessage(LOG_LEVEL_DEBUG, format("Space pressed").c_str());
+			isPaused = !isPaused;
+		}
 
 		if(!isPaused) {
 			beg = clock();
@@ -23,13 +30,17 @@ Operation::Operation(VideoCapture &capture) : capture(capture) {
 			process(frame);
 			dur = clock() - beg;
 
-			putText(frame, format("FPS : %.1lf", fps.calcAvgFps()), Point(10, 30), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
-			putText(frame, format("Frame Rate : %.2lf ms.", fps.calcAvgDur(dur)), Point(10, 60), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
-			putText(frame, format("Frame No : %d", frameNo), Point(10, 90), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
-			writeLogMessage(LOG_LEVEL_INFO, format("FPS : %5.1lf | Frame Rate : %5.2lf ms. | Frame No : %5d",
-												   fps.getAvarageFps(), fps.calcAvgDur(dur), frameNo).c_str());
+			putText(frame, format("FPS : %.2lf", fps.calcAvgFps()),
+					Point(10, 30), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+			putText(frame, format("Frame Rate : %.2lf ms.", fps.calcAvgDur(dur)),
+					Point(10, 60), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+			putText(frame, format("Frame No : %d", frameNo),
+					Point(10, 90), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+
+			writeLogMessage(LOG_LEVEL_INFO, format("FPS : %4.2lf | Frame Rate : %4.2lf ms.",
+												   fps.getAvarageFps(), fps.calcAvgDur(dur)).c_str());
 		} else {
-			putText(frame, format("Paused"), Point2f(10, 150), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+			putText(frame, format("Paused"), Point(10, 150), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
 		}
 		imshow(WINDOW_NAME_MAIN, frame);
 	}
@@ -37,7 +48,7 @@ Operation::Operation(VideoCapture &capture) : capture(capture) {
 
 void Operation::process(Mat &frame) {
 	Mat pre = findColor(frame);
-	//imshow(WINDOW_NAME_PREP, pre);
+	imshow(WINDOW_NAME_PREP, pre);
 
 	vector<vector<Point>> approx, contours;
 	findContours(pre, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -49,16 +60,18 @@ void Operation::process(Mat &frame) {
 			drawContours(frame, approx, i, Scalar(0, 255, 255), 2);
 		}
 	}
-	putText(frame, format("Number of Objects Detected : %d", approx.size()), Point(10, 120), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
+	putText(frame, format("Number of Objects Detected : %d", approx.size()),
+			Point(10, 120), FONT_HERSHEY_SIMPLEX, .8, Scalar(0, 155, 255), 2);
 }
 
 Mat Operation::findColor(Mat &frame) {
-	Mat hsv, maskRed, maskBlue, output;
+	Mat hsv, maskRedR, maskRedL, maskBlue, output;
 
 	cvtColor(frame, hsv, COLOR_BGR2HSV);
-	inRange(hsv, lowerBoundRed, upperBoundRed, maskRed);
-	inRange(hsv, lowerBoundBlue, upperBoundBlue, maskBlue);
-	copyTo(frame, output, maskRed | maskBlue);
+	inRange(hsv, redR.lower, redR.upper, maskRedR);
+	inRange(hsv, redL.lower, redL.upper, maskRedL);
+	inRange(hsv, blue.lower, blue.upper, maskBlue);
+	copyTo(frame, output, maskRedR | maskRedL | maskBlue);
 	cvtColor(output, output, COLOR_BGR2GRAY);
 	return output;
 }
@@ -68,12 +81,6 @@ void Operation::findShape(Mat &frame, vector<Point> &contour, vector<Point> &app
 	approxPolyDP(contour, approx, 0.02 * length, true);
 
 	RotatedRect rect = minAreaRect(contour);
-	putText(frame, format(". %s", approx.size() == 4 ? "Rectangle" : approx.size() > 7 ? "Circle" : "UGO"),
+	putText(frame, format(". %s", approx.size() == 4 ? "Rectangle" : approx.size() > 6 ? "Circle" : "UGO"),
 			Point2f(rect.center.x, rect.center.y), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 100, 255), 2);
-}
-
-Operation::~Operation() {
-	if(capture.isOpened()) {
-		capture.release();
-	}
 }
