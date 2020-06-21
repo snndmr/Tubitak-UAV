@@ -31,7 +31,12 @@ class Operation {
 	const Bound redL = { Scalar(160, 100, 100), Scalar(180, 255, 255) };
 	const Bound blue = { Scalar(100, 150, 150) , Scalar(140, 255, 255) };
 
+	const Scalar WHITE = Scalar(255, 255, 255);
+	const Scalar GREEN = Scalar(200, 255, 100);
+	const Scalar ORANGE = Scalar(100, 200, 255);
+
 	VideoCapture capture;
+	Point centerOfCapture;
 
 	void process(Mat &);
 	Mat findColor(Mat &);
