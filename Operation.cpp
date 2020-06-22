@@ -52,7 +52,7 @@ Operation::Operation(VideoCapture &capture) {
 
 void Operation::process(Mat &frame) {
 	Mat pre = findColor(frame);
-	// imshow(WINDOW_NAME_PREP, pre);
+	imshow(WINDOW_NAME_PREP, pre);
 
 	vector<vector<Point>> approx, contours;
 	findContours(pre, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);

@@ -29,7 +29,7 @@ class Operation {
 
 	const Bound redR = { Scalar(0, 100, 100), Scalar(10, 255, 255) };
 	const Bound redL = { Scalar(160, 100, 100), Scalar(180, 255, 255) };
-	const Bound blue = { Scalar(100, 150, 150) , Scalar(140, 255, 255) };
+	const Bound blue = { Scalar(100, 100, 100) , Scalar(140, 255, 255) };
 
 	const Scalar WHITE = Scalar(255, 255, 255);
 	const Scalar GREEN = Scalar(200, 255, 100);
