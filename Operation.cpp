@@ -41,7 +41,8 @@ Operation::Operation(VideoCapture &capture) {
 
 			drawMarker(frame, centerOfCapture, WHITE, MARKER_CROSS, 20, 2);
 		} else {
-			putText(frame, format("Paused"), Point(10, 120), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
+			putText(frame, format("Paused"),
+					Point(10, 120), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
 		}
 		imshow(WINDOW_NAME_MAIN, frame);
 	}
@@ -58,16 +59,24 @@ void Operation::process(Mat &frame) {
 	vector<vector<Point>> approxRed(contoursRed.size()), approxBlue(contursBlue.size());
 
 	for(int i = 0; i < contoursRed.size(); i++) {
-		if(contourArea(contoursRed[i]) > MIN_AREA) {
-			findShape(frame, contoursRed[i], approxRed[i], 0.01);
+		if(contourArea(contoursRed[i]) > MIN_AREA && isCircle(contoursRed[i], approxRed[i])) {
 			drawContours(frame, approxRed, i, ORANGE, 2);
+
+			RotatedRect rect = minAreaRect(contoursRed[i]);
+			line(frame, centerOfCapture, rect.center, GREEN, 2);
+			putText(frame, format("Circle (%.1f, %.1f)",
+								  rect.center.x, rect.center.y), rect.center, FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
 		}
 	}
 
 	for(int i = 0; i < contursBlue.size(); i++) {
-		if(contourArea(contursBlue[i]) > MIN_AREA) {
-			findShape(frame, contursBlue[i], approxBlue[i]);
+		if(contourArea(contursBlue[i]) > MIN_AREA && isRect(contursBlue[i], approxBlue[i])) {
 			drawContours(frame, approxBlue, i, ORANGE, 2);
+
+			RotatedRect rect = minAreaRect(contursBlue[i]);
+			line(frame, centerOfCapture, rect.center, GREEN, 2);
+			putText(frame, format("Rectangle (%.1f, %.1f)",
+								  rect.center.x, rect.center.y), rect.center, FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
 		}
 	}
 }
@@ -89,17 +98,12 @@ Mat Operation::findBlueColor(Mat &frame, Mat &hsv) {
 	return output;
 }
 
-void Operation::findShape(Mat &frame, vector<Point> &contour, vector<Point> &approx, double sensivity) {
-	approxPolyDP(contour, approx, sensivity * arcLength(contour, true), true);
+bool Operation::isRect(vector<Point> &contour, vector<Point> &approx) {
+	approxPolyDP(contour, approx, 0.04 * arcLength(contour, true), true);
+	return approx.size() == 4 ? true : false;
+}
 
-	RotatedRect rect = minAreaRect(contour);
-	if(approx.size() == 4) {
-		putText(frame, format("Rectangle (%.1f, %.1f)", rect.center.x, rect.center.y), rect.center, FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
-		line(frame, centerOfCapture, rect.center, GREEN, 2);
-	} else if(approx.size() > 6) {
-		putText(frame, format("Circle (%.1f, %.1f)", rect.center.x, rect.center.y), rect.center, FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
-		line(frame, centerOfCapture, rect.center, GREEN, 2);
-	} else {
-		putText(frame, format("UGO (%.1f, %.1f)", rect.center.x, rect.center.y), rect.center, FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
-	}
+bool Operation::isCircle(vector<Point> &contour, vector<Point> &approx) {
+	approxPolyDP(contour, approx, 0.01 * arcLength(contour, true), true);
+	return approx.size() > 6 ? true : false;
 }

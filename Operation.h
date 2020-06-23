@@ -38,6 +38,8 @@ class Operation {
 	void process(Mat &);
 	Mat findRedColor(Mat &, Mat &);
 	Mat findBlueColor(Mat &, Mat &);
+	bool isRect(vector<Point> &, vector<Point> &);
+	bool isCircle(vector<Point> &, vector<Point> &);
 	void findShape(Mat &, vector<Point> &, vector<Point> &, double = 0.02);
 };
 
