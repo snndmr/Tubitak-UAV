@@ -41,7 +41,7 @@ void Operation::init() {
 				format("FPS : %.2lf", fps.calcAvgFps()),
 				format("Frame Rate : %.2lf ms.", fps.calcAvgDur(dur)),
 				format("Frame No : %d out of %.0lf", frameNo, frameCount),
-				format("Frame Size : %.1lfx%.1lf", frameSize.x, frameSize.y)
+				format("Frame Size : %.1lf x %.1lf", frameSize.x, frameSize.y)
 			};
 
 			drawMarker(frame, centerOfCapture, WHITE, MARKER_CROSS, 20, 2);
@@ -55,29 +55,24 @@ void Operation::init() {
 	}
 }
 
-void Operation::mPutText(Mat &frame, vector<string> &texts) {
-	for(unsigned int i = 0; i < texts.size(); i++) {
-		putText(frame, texts[i], Point(5, (i + 1) * 30), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
-	}
-}
-
 void Operation::process(Mat &frame) {
 	Mat hsv;
 	cvtColor(frame, hsv, COLOR_BGR2HSV);
 
-	vector<vector<Point>> contoursRed, contursBlue;
-	findContours(findRedColor(frame, hsv), contoursRed, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-	findContours(findBlueColor(frame, hsv), contursBlue, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+	Mat maskedRed = findRedColor(frame, hsv);
+	Mat maskedBlue = findBlueColor(frame, hsv);
 
+	vector<vector<Point>> contoursRed, contursBlue;
+	findContours(maskedRed, contoursRed, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+	findContours(maskedBlue, contursBlue, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 	vector<vector<Point>> approxRed(contoursRed.size()), approxBlue(contursBlue.size());
 
 	for(int i = 0; i < contoursRed.size(); i++) {
 		if(contourArea(contoursRed[i]) > MIN_AREA && isCircle(contoursRed[i], approxRed[i])) {
 			drawContours(frame, approxRed, i, ORANGE, 2);
-
 			RotatedRect rect = minAreaRect(contoursRed[i]);
 			line(frame, centerOfCapture, rect.center, GREEN, 2);
-			putText(frame, format("Circle (%.1f, %.1f)",
+			putText(frame, format("Red Circle (%.1f, %.1f)",
 								  rect.center.x, rect.center.y), rect.center, FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
 		}
 	}
@@ -88,9 +83,15 @@ void Operation::process(Mat &frame) {
 
 			RotatedRect rect = minAreaRect(contursBlue[i]);
 			line(frame, centerOfCapture, rect.center, GREEN, 2);
-			putText(frame, format("Rectangle (%.1f, %.1f)",
+			putText(frame, format("Blue Rectangle (%.1f, %.1f)",
 								  rect.center.x, rect.center.y), rect.center, FONT_HERSHEY_SIMPLEX, 0.8, GREEN, 2);
 		}
+	}
+}
+
+void Operation::mPutText(Mat &frame, vector<string> &texts) {
+	for(unsigned int i = 0; i < texts.size(); i++) {
+		putText(frame, texts[i], Point(5, (i + 1) * 30), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
 	}
 }
 
