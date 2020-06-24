@@ -8,11 +8,14 @@ Operation::Operation(VideoCapture &capture) {
 	double beg;
 	double dur;
 	bool isPaused = false;
+	unsigned int frameNo = 0;
 
 	FPS fps;
 	Mat frame;
 
-	for(int frameNo = 0; key = waitKey(1); frameNo += 1) {
+	while(true) {
+		key = waitKey(1);
+
 		if(key == 27) {
 			cout << format("\n ESC pressed");
 			break;
@@ -30,6 +33,7 @@ Operation::Operation(VideoCapture &capture) {
 				break;
 			}
 			process(frame);
+			frameNo += 1;
 			dur = clock() - beg;
 
 			putText(frame, format("FPS : %.2lf", fps.calcAvgFps()),
