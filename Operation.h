@@ -15,7 +15,10 @@ struct Bound {
 class Operation {
 	public:
 
-	Operation(VideoCapture &);
+	Operation(VideoCapture&);
+
+	void init();
+	void mPutText(Mat &frame, vector<string> &);
 
 	private:
 
@@ -24,22 +27,23 @@ class Operation {
 	const char *WINDOW_NAME_MAIN = "Window Main";
 	const char *WINDOW_NAME_PREP = "Window Prep";
 
-	const Bound redR = { Scalar(0, 100, 100), Scalar(10, 255, 255) };
-	const Bound redL = { Scalar(160, 100, 100), Scalar(180, 255, 255) };
-	const Bound blue = { Scalar(100, 120, 120) , Scalar(140, 255, 255) };
+	const Bound redR = { Scalar(0, 100, 100), Scalar(15, 255, 255) };
+	const Bound redL = { Scalar(155, 100, 100), Scalar(180, 255, 255) };
+	const Bound blue = { Scalar(95, 120, 120), Scalar(145, 255, 255) };
 
 	const Scalar WHITE = Scalar(255, 255, 255);
 	const Scalar GREEN = Scalar(200, 255, 100);
 	const Scalar ORANGE = Scalar(100, 200, 255);
 
 	VideoCapture capture;
-	Point centerOfCapture;
+	Point2d centerOfCapture;
+	Point2d frameSize;
+	double frameCount;
 
 	void process(Mat &);
 	Mat findRedColor(Mat &, Mat &);
 	Mat findBlueColor(Mat &, Mat &);
 	bool isRect(vector<Point> &, vector<Point> &);
 	bool isCircle(vector<Point> &, vector<Point> &);
-	void findShape(Mat &, vector<Point> &, vector<Point> &, double = 0.02);
 };
 

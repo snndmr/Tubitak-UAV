@@ -1,54 +1,63 @@
 #include "FPS.h"
 #include "Operation.h"
 
-Operation::Operation(VideoCapture &capture) {
-	centerOfCapture = Point2d(capture.get(CAP_PROP_FRAME_WIDTH) / 2,
-							  capture.get(CAP_PROP_FRAME_HEIGHT) / 2);
-	char key;
-	double beg;
-	double dur;
+Operation::Operation(VideoCapture &capture) : capture(capture) {
+	frameSize = Point2d(capture.get(CAP_PROP_FRAME_WIDTH), capture.get(CAP_PROP_FRAME_HEIGHT));
+	centerOfCapture = Point2d(frameSize.x / 2, frameSize.y / 2);
+	frameCount = capture.get(CAP_PROP_FRAME_COUNT);
+	init();
+}
+
+void Operation::init() {
 	bool isPaused = false;
-	unsigned int frameNo = 0;
+	char pressedKey;
 
 	FPS fps;
 	Mat frame;
+	vector<string> texts;
 
-	while(true) {
-		key = waitKey(1);
-
-		if(key == 27) {
+	for(unsigned int frameNo = 0; pressedKey = waitKey(1);) {
+		if(pressedKey == 27) {
 			cout << format("\n ESC pressed");
 			break;
 		}
 
-		if(key == 32) {
+		if(pressedKey == 32) {
 			cout << format("\n Space pressed");
 			isPaused = !isPaused;
 		}
 
 		if(!isPaused) {
-			beg = clock();
+			double beg = clock();
 			if(!capture.read(frame)) {
 				cout << format("\n Frame could not be loaded");
 				break;
 			}
-			process(frame);
 			frameNo += 1;
-			dur = clock() - beg;
+			process(frame);
+			double dur = clock() - beg;
 
-			putText(frame, format("FPS : %.2lf", fps.calcAvgFps()),
-					Point(10, 30), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
-			putText(frame, format("Frame Rate : %.2lf ms.", fps.calcAvgDur(dur)),
-					Point(10, 60), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
-			putText(frame, format("Frame No : %d", frameNo),
-					Point(10, 90), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
+			texts = {
+				format("FPS : %.2lf", fps.calcAvgFps()),
+				format("Frame Rate : %.2lf ms.", fps.calcAvgDur(dur)),
+				format("Frame No : %d out of %.0lf", frameNo, frameCount),
+				format("Frame Size : %.1lfx%.1lf", frameSize.x, frameSize.y)
+			};
 
 			drawMarker(frame, centerOfCapture, WHITE, MARKER_CROSS, 20, 2);
 		} else {
-			putText(frame, format("Paused"),
-					Point(10, 120), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
+			if(texts.size() == 4) {
+				texts.push_back(format("Paused"));
+			}
 		}
+		mPutText(frame, texts);
 		imshow(WINDOW_NAME_MAIN, frame);
+	}
+}
+
+void Operation::mPutText(Mat &frame, vector<string> &texts) {
+	for(unsigned int i = 0; i < texts.size(); i++) {
+		putText(frame, texts[i], Point(5, (i + 1) * 30), FONT_HERSHEY_SIMPLEX, .8, ORANGE, 2);
 	}
 }
 
@@ -104,10 +113,10 @@ Mat Operation::findBlueColor(Mat &frame, Mat &hsv) {
 
 bool Operation::isRect(vector<Point> &contour, vector<Point> &approx) {
 	approxPolyDP(contour, approx, 0.04 * arcLength(contour, true), true);
-	return approx.size() == 4 ? true : false;
+	return approx.size() == 4 && isContourConvex(approx) ? true : false;
 }
 
 bool Operation::isCircle(vector<Point> &contour, vector<Point> &approx) {
-	approxPolyDP(contour, approx, 0.01 * arcLength(contour, true), true);
-	return approx.size() > 6 ? true : false;
+	approxPolyDP(contour, approx, 0.02 * arcLength(contour, true), true);
+	return approx.size() > 6 && isContourConvex(approx) ? true : false;
 }
