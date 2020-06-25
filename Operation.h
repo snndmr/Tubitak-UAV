@@ -7,29 +7,23 @@
 using namespace cv;
 using namespace std;
 
-struct Bound {
+struct Bound
+{
 	Scalar lower;
 	Scalar upper;
 };
 
-class Operation {
-	public:
-
-	Operation(VideoCapture&);
-
-	void init();
-	void mPutText(Mat &frame, vector<string> &);
-
-	private:
-
+class Operation
+{
+private:
 	const float MIN_AREA = 1e3;
 
 	const char *WINDOW_NAME_MAIN = "Window Main";
 	const char *WINDOW_NAME_PREP = "Window Prep";
 
-	const Bound redR = { Scalar(0, 100, 100), Scalar(15, 255, 255) };
-	const Bound redL = { Scalar(155, 100, 100), Scalar(180, 255, 255) };
-	const Bound blue = { Scalar(95, 120, 120), Scalar(145, 255, 255) };
+	const Bound redR = {Scalar(0, 100, 100), Scalar(10, 255, 255)};
+	const Bound redL = {Scalar(160, 100, 100), Scalar(180, 255, 255)};
+	const Bound blue = {Scalar(100, 100, 100), Scalar(130, 255, 255)};
 
 	const Scalar WHITE = Scalar(255, 255, 255);
 	const Scalar GREEN = Scalar(200, 255, 100);
@@ -45,5 +39,11 @@ class Operation {
 	Mat findBlueColor(Mat &, Mat &);
 	bool isRect(vector<Point> &, vector<Point> &);
 	bool isCircle(vector<Point> &, vector<Point> &);
-};
 
+public:
+	Operation(VideoCapture &);
+	~Operation();
+
+	void init();
+	void mPutText(Mat &frame, vector<string> &);
+};
