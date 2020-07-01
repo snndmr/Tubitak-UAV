@@ -1,8 +1,9 @@
 #!/bin/sh
 
 #
-# Author: snn
-# To use: g++ main.cpp -o run `pkg-config --cflags --libs opencv4` && ./run [argv if there is argument]
+# Author : snn
+# To use : sudo chmod +x /path/to/file/cv2rasp && ./cv2rasp
+# To test: g++ main.cpp -o run `pkg-config --cflags --libs opencv4` && ./run [argv if there is argument]
 #
 
 sudo apt-get update
