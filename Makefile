@@ -1,6 +1,6 @@
 CC = "g++"
-SRC = src/main.cpp src/operation.cpp src/fps.cpp
-PROJECT = "Tubitak"
+SRC = src/main.cpp src/detector.cpp src/fps.cpp
+PROJECT = "tubitak"
 LIBS = `pkg-config --cflags --libs opencv4`
 
 $(PROJECT) : $(SRC)
