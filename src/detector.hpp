@@ -27,7 +27,7 @@ class Detector {
     const int APPROX_SIZE_RECT       = 4;
     const int MIN_APPROX_SIZE_CIRCLE = 6;
 
-    const Bound BOUNDS_OF_BLUE      = {Scalar(90, 150, 30), Scalar(130, 255, 255)};
+    const Bound BOUNDS_OF_BLUE      = {Scalar(90, 100, 30), Scalar(130, 255, 255)};
     const Bound BOUNDS_OF_RED_LEFT  = {Scalar(0, 100, 100), Scalar(10, 255, 255)};
     const Bound BOUNDS_OF_RED_RIGHT = {Scalar(160, 100, 100), Scalar(180, 255, 255)};
 

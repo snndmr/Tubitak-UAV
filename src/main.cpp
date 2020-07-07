@@ -1,18 +1,13 @@
-#include <iostream>
+#define SONAR_ENABLE 0
 
 #include "detector.hpp"
-#include "sonar.hpp"
 #include "fps.hpp"
-
-using namespace std;
+#include "sonar.hpp"
 
 const char* const WIN_NAME_MAIN = "Main";
 
-const int PIN_ECHO = 0;
-const int PIN_TRIG = 1;
-
 void mPutText(Mat frame, string text, Point pos) {
-    putText(frame, text, pos, FONT_ITALIC, 0.8, Scalar(255, 255, 255), 2);
+    putText(frame, text, pos, FONT_ITALIC, 0.75, Scalar(255, 255, 255), 2);
 }
 
 int main(int argc, char** argv) {
@@ -21,11 +16,14 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    VideoCapture videoCapture(atoi(argv[1]));
+    VideoCapture videoCapture(argv[1]);
     if (!videoCapture.isOpened()) return EXIT_FAILURE;
+
+#if SONAR_ENABLE
     if (wiringPiSetup() == -1) return EXIT_FAILURE;
-    
     Sonar sonar(PIN_TRIG, PIN_ECHO);
+#endif
+
     Detector* detect = new Detector();
 
     FPS fps;
@@ -61,16 +59,18 @@ int main(int argc, char** argv) {
                     mPutText(frame, format("Red Circle: %d, %d", bundle.positon.x, bundle.positon.y), bundle.positon);
                     break;
             }
-            
+
             polylines(frame, bundle.approx, true, Scalar(255, 255, 255), 2);
         }
 
         dur = fps.mClock() - beg;
 
-        mPutText(frame, format("FPS: %.2lf", fps.calcAvgFps()), Point(10, 30));
+        mPutText(frame, format("Frame Per Second: %.2lf", fps.calcAvgFps()), Point(10, 30));
         mPutText(frame, format("Frame Rate : %.2lf ms.", fps.calcAvgDur(dur)), Point(10, 60));
         mPutText(frame, format("Frame: %d", frameIndex), Point(10, 90));
+#if SONAR_ENABLE
         mPutText(frame, format("Distance: %.2lf cm.", sonar.distance(30000)), Point(10, 120));
+#endif
         imshow(WIN_NAME_MAIN, frame);
     }
 

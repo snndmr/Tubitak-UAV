@@ -9,8 +9,8 @@ vector<Bundle> Detector::process(Mat image) {
     cvtColor(image, hsv, COLOR_BGR2HSV);
     medianBlur(hsv, hsv, 5);
 
-    imshow("Masked Red", findRedColor(image, hsv));
-    imshow("Masked Blue", findBlueColor(image, hsv));
+    // imshow("Masked Red", findRedColor(image, hsv));
+    // imshow("Masked Blue", findBlueColor(image, hsv));
 
     vector<Bundle> bundles;
     vector<vector<Point>> contoursRed, contoursBlue;
@@ -64,6 +64,6 @@ bool Detector::isCircle(vector<Point> &contour, vector<Point> &approx) {
 }
 
 bool Detector::isRectangle(vector<Point> &contour, vector<Point> &approx) {
-    approxPolyDP(contour, approx, 0.04 * arcLength(contour, true), true);
+    approxPolyDP(contour, approx, 0.01 * arcLength(contour, true), true);
     return approx.size() == APPROX_SIZE_RECT && isContourConvex(approx) ? true : false;
 }
