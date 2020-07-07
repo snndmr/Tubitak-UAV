@@ -45,9 +45,7 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
 
-        vector<Bundle> bundles = detect->process(frame);
-
-        for (Bundle bundle : bundles) {
+        for (Bundle bundle : detect->process(frame)) {
             switch (bundle.type) {
                 case RECT:
                     mPutText(frame, format("Blue Rect: %d, %d", bundle.positon.x, bundle.positon.y), bundle.positon);
@@ -59,7 +57,6 @@ int main(int argc, char** argv) {
                     mPutText(frame, format("Red Circle: %d, %d", bundle.positon.x, bundle.positon.y), bundle.positon);
                     break;
             }
-
             polylines(frame, bundle.approx, true, Scalar(255, 255, 255), 2);
         }
 
