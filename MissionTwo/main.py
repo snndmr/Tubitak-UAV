@@ -1,15 +1,22 @@
 import cv2
+import math
 import time
 import argparse
+# import RPi.GPIO as GPIO
 
-from pynput import keyboard
 from pointer import Pointer
 from detector import Detector
+
+from pynput import keyboard
+from pymavlink import mavutil
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 
-MIN_ALT = 5.0
 TOLERANCE = 0.0001
-isListenerAlive = True
+
+drop_area = {}
+target_locked = False
+drop_area_find = False
+keyboard_listener_alive = True
 
 parser = argparse.ArgumentParser(description='Mission Two')
 parser.add_argument('--camera', help='Raspberry Pi camera id string.', default=0)  # -1
@@ -17,10 +24,15 @@ parser.add_argument('--connect', help='Vehicle connection target string.', defau
 args = parser.parse_args()
 
 
-def add(feature):
-    info = vehicle.location.global_relative_frame
-    pointer.add_data({'Feature': feature, 'Alt': info.alt, 'Lat': info.lat, 'Lon': info.lon})
-    print(' {} point added.'.format(feature))
+def send_body_ned_velocity(velocity_x, velocity_y, velocity_z):
+    msg = vehicle.message_factory.set_position_target_local_ned_encode(
+        0, 0, 0,
+        mavutil.mavlink.MAV_FRAME_BODY_NED,
+        0b0000111111000111,
+        0, 0, 0,
+        velocity_x, velocity_y, velocity_z,
+        0, 0, 0, 0, 0)
+    vehicle.send_mavlink(msg)
 
 
 def detect():
@@ -31,7 +43,6 @@ def detect():
 
     width, height = detector.cap.get(cv2.CAP_PROP_FRAME_WIDTH), detector.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     centerOfCap = (int(width / 2), int(height / 2))
-
     bundles = Detector.process(frame)
 
     for bundle in bundles:
@@ -40,42 +51,66 @@ def detect():
         cY = int(M["m01"] / M["m00"])
 
         if bundle[0] == 'Circle':
-            cv2.putText(frame, 'Circle {}, {}'.format(cX, cY), (cX, cY), cv2.FONT_ITALIC, 0.75, [255, 255, 255], 2)
-        elif bundle[0] == 'Square':
-            cv2.putText(frame, 'Square {}, {}'.format(cX, cY), (cX, cY), cv2.FONT_ITALIC, 0.75, [255, 255, 255], 2)
-        cv2.polylines(frame, bundle[1], True, [255, 255, 255], 2)
-        cv2.line(frame, centerOfCap, (cX, cY), [200, 255, 100], 2)
+            cv2.polylines(frame, bundle[1], True, [100, 255, 255], 2)
+            cv2.line(frame, centerOfCap, (cX, cY), [200, 255, 100], 2)
+
+            info = vehicle.location.global_relative_frame
+
+            x = centerOfCap[0] - cX
+            y = centerOfCap[1] - cY
+
+            try:
+                rad = math.atan(x / y)
+            except ZeroDivisionError:
+                rad = 0
+
+            global target_locked
+            if not target_locked:
+                deg = -1 * math.degrees(rad) if x > 0 and y > 0 or x < 0 and y > 0 else -1 * math.degrees(rad) + 180
+                deg += math.degrees(vehicle.attitude.yaw)
+                vehicle.gimbal.rotate(0, 0, int(deg))
+                target_locked = True
+
+            # velocity_x = 1, velocity_y = 0, velocity_z = 0
+            send_body_ned_velocity(1, 0, 0)
+
+            if abs(cX - centerOfCap[0]) < 10 and abs(cY - centerOfCap[1]) < 10:
+                global drop_area_find
+                global drop_area
+
+                print(' Drop area found.')
+                vehicle.simple_goto(vehicle.location.global_relative_frame)
+                time.sleep(3)
+                drop_area = {'Lat': info.lat, 'Lon': info.lon}
+                drop_area_find = True
 
     cv2.putText(frame, 'FPS: {:.3f}'.format(detector.fps.calcFPS()), (5, 24), cv2.FONT_ITALIC, 0.75, [255, 255, 255], 2)
-    cv2.drawMarker(frame, centerOfCap, [255, 255, 255], cv2.MARKER_CROSS, 20, 2)
+    cv2.drawMarker(frame, centerOfCap, [100, 255, 255], cv2.MARKER_CROSS, 20, 2)
     cv2.imshow("Window", frame)
     cv2.waitKey(1)
 
 
-def arm_and_takeoff():
+def arm_and_takeoff(mAlt):
     print('\n Basic pre-arm checks.')
     while not vehicle.is_armable:
         print(' Waiting for vehicle to initialise.')
-        time.sleep(1)
+        time.sleep(3)
 
     print(' Arming motors.')
-    # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
 
-    # Confirm vehicle armed before attempting to take off
     while not vehicle.armed:
         print(' Waiting for arming.')
-        time.sleep(1)
+        time.sleep(3)
 
-    vehicle.simple_takeoff(MIN_ALT)
+    vehicle.simple_takeoff(mAlt)
 
     while True:
-        # Break and return from function just below target altitude.
-        if vehicle.location.global_relative_frame.alt >= MIN_ALT * 0.95:
+        if vehicle.location.global_relative_frame.alt >= mAlt * 0.95:
             print(" Reached target altitude.")
             break
-        print(' Reaching the target altitude {} ~ {}'.format(vehicle.location.global_relative_frame.alt, MIN_ALT))
+        print(' Reaching the target altitude {} ~ {}'.format(vehicle.location.global_relative_frame.alt, mAlt))
         time.sleep(1)
 
 
@@ -89,22 +124,52 @@ def isReach(target):
     return True
 
 
+# def left():
+#     global pwm
+#     pwm.ChangeDutyCycle(3)
+#     time.sleep(5)
+#     pwm.ChangeDutyCycle(7)
+#
+#
+# def right():
+#     global pwm
+#     pwm.ChangeDutyCycle(11)
+#     time.sleep(5)
+#     pwm.ChangeDutyCycle(7)
+
+
 def move():
     for index in pointer.get_data():
+        pointer.show_specific_data(index)
         target = pointer.get_data()[index]
 
         point = LocationGlobalRelative(target['Lat'], target['Lon'], target['Alt'])
-        vehicle.simple_goto(point)
+        vehicle.simple_goto(point, target['Speed'])
 
-        print(' Reaching the point {} - Feature: {}'.format(index, target['Feature']))
         while isReach(target):
-            if target['Feature'] == 'Normal':
-                if detector.cap.isOpened():
-                    detector.cap.release()
             if target['Feature'] == 'Detect':
                 if not detector.cap.isOpened():
                     detector.cap.open(args.camera)
-                detect()
+                if not drop_area_find:
+                    detect()
+                if drop_area_find:
+                    detector.cap.release()
+                    cv2.destroyAllWindows()
+                    break
+        if target['Feature'] == 'Pickup':
+            # left()
+            print(' Servo will run for 5 seconds')
+            print('')
+        elif target['Feature'] == 'Drop':
+            # right()
+            print(' Servo will run for 5 seconds.')
+            print('')
+
+
+def add(feature):
+    info = vehicle.location.global_relative_frame
+    pointer.add_data({'Feature': feature, 'Alt': 10, 'Lat': info.lat, 'Lon': info.lon, 'Speed': 15})
+    print(' {} point added.'.format(feature))
 
 
 def on_press(key):
@@ -125,16 +190,44 @@ def on_press(key):
             print(' Data was created with {} points and saved in data.json file.'.format(len(pointer.get_data())))
         elif key == keyboard.Key.space:
             print(' The flight is starting.')
-            global isListenerAlive
-            isListenerAlive = False
+            global keyboard_listener_alive
+            keyboard_listener_alive = False
 
 
 if __name__ == '__main__':
+    # servoPIN = 18
+    # GPIO.setwarnings(False)
+    # GPIO.setmode(GPIO.BOARD)
+    # GPIO.setup(servoPIN, GPIO.OUT)
+    # pwm = GPIO.PWM(servoPIN, 50)
+    # pwm.start(7)
+
     print('\n Connecting to vehicle on: {}'.format(args.connect))
     vehicle = connect(args.connect, wait_ready=True)
 
     pointer = Pointer()
     pointer.read_from_file()
+
+    # Usage of data generator.
+    # First lap
+    #
+    #    (o)                                   (o)
+    #       6N....5D................4N........3T
+    #     .                 |                   .
+    #   7T                  |                     2T
+    #     .                 |                   .
+    #       8T...........H..|................1N
+    #                       |
+
+    # Second lap
+    #
+    #    (o)                                   (o)
+    #       6N..................5D.....4P....3T
+    #     .                 |                   .
+    #   7T                  |                     2T
+    #     .                 |                   .
+    #       8T...........H..|................1N
+    #                       |
 
     if not bool(pointer.get_data()):
         print(' Data file not found for the flight, data generator will be started.')
@@ -142,11 +235,21 @@ if __name__ == '__main__':
         listener = keyboard.Listener(on_press=on_press)
         listener.start()
 
-        while isListenerAlive:
+        while keyboard_listener_alive:
             pass
 
-    detector = Detector()
-    arm_and_takeoff()
+    detector = Detector(args.camera)
+    arm_and_takeoff(10)
+
     move()
 
+    pointer.get_data()['4'] = {'Feature': 'Pickup', 'Alt': 0.5, 'Lat': -35.3625873, 'Lon': 149.1643327, 'Speed': 3}
+    if drop_area_find:
+        pointer.get_data()['5'] = \
+            {'Feature': 'Drop', 'Alt': 3, 'Lat': drop_area['Lat'], 'Lon': drop_area['Lon'], 'Speed': 3}
+        move()
+    else:
+        print(' Drop area not found.')
+
+    print(' Return To Launch')
     vehicle.mode = VehicleMode("RTL")
