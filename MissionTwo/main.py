@@ -20,6 +20,7 @@ keyboard_listener_alive = True
 
 parser = argparse.ArgumentParser(description='Mission Two')
 parser.add_argument('--camera', help='Raspberry Pi camera id string.', default=0)  # -1
+parser.add_argument('--takeoff', help='Takeoff height.', default=10)
 parser.add_argument('--connect', help='Vehicle connection target string.', default='127.0.0.1:14550')  # /dev/serial0
 args = parser.parse_args()
 
@@ -117,25 +118,11 @@ def arm_and_takeoff(mAlt):
 def isReach(target):
     info = vehicle.location.global_relative_frame
 
-    if info.alt >= target['Alt'] * 0.95 and \
+    if target['Alt'] * 0.95 <= info.alt >= target['Alt'] * 1.05 and \
             target['Lat'] + TOLERANCE >= info.lat >= target['Lat'] - TOLERANCE and \
             target['Lon'] + TOLERANCE >= info.lon >= target['Lon'] - TOLERANCE:
         return False
     return True
-
-
-# def left():
-#     global pwm
-#     pwm.ChangeDutyCycle(3)
-#     time.sleep(5)
-#     pwm.ChangeDutyCycle(7)
-#
-#
-# def right():
-#     global pwm
-#     pwm.ChangeDutyCycle(11)
-#     time.sleep(5)
-#     pwm.ChangeDutyCycle(7)
 
 
 def move():
@@ -157,44 +144,59 @@ def move():
                     cv2.destroyAllWindows()
                     break
         if target['Feature'] == 'Pickup':
-            # left()
-            print(' Servo will run for 5 seconds')
+            # turn_left()
+            print(' Servo will run for 4 seconds')
             print('')
         elif target['Feature'] == 'Drop':
-            # right()
-            print(' Servo will run for 5 seconds.')
+            # turn_right()
+            print(' Servo will run for 4 seconds.')
             print('')
 
 
-def add(feature):
-    info = vehicle.location.global_relative_frame
-    pointer.add_data({'Feature': feature, 'Alt': 10, 'Lat': info.lat, 'Lon': info.lon, 'Speed': 15})
-    print(' {} point added.'.format(feature))
+# #For SITL
+# def add(feature):
+#     info = vehicle.location.global_relative_frame
+#     pointer.add_data({'Feature': feature, 'Alt': 10, 'Lat': info.lat, 'Lon': info.lon, 'Speed': 15})
+#     print(' {} point added.'.format(feature))
+
+# def on_press(key):
+#     try:
+#         if key.char == '1':
+#             add('Normal')
+#         elif key.char == '2':
+#             add('Detect')
+#         elif key.char == '3':
+#             add('Pickup')
+#         elif key.char == '4':
+#             add('Drop')
+#         elif key.char == '5':
+#             add('Turn')
+#     except AttributeError:
+#         if key == keyboard.Key.enter:
+#             pointer.write_to_file()
+#             print(' Data was created with {} points and saved in data.json file.'.format(len(pointer.get_data())))
+#         elif key == keyboard.Key.space:
+#             print(' The flight is starting.')
+#             global keyboard_listener_alive
+#             keyboard_listener_alive = False
 
 
-def on_press(key):
-    try:
-        if key.char == '1':
-            add('Normal')
-        elif key.char == '2':
-            add('Detect')
-        elif key.char == '3':
-            add('Pickup')
-        elif key.char == '4':
-            add('Drop')
-        elif key.char == '5':
-            add('Turn')
-    except AttributeError:
-        if key == keyboard.Key.enter:
-            pointer.write_to_file()
-            print(' Data was created with {} points and saved in data.json file.'.format(len(pointer.get_data())))
-        elif key == keyboard.Key.space:
-            print(' The flight is starting.')
-            global keyboard_listener_alive
-            keyboard_listener_alive = False
+# def turn_left():
+#     global pwm
+#     pwm.ChangeDutyCycle(3)
+#     time.sleep(5)
+#     pwm.ChangeDutyCycle(7)
+#
+#
+# def turn_right():
+#     global pwm
+#     pwm.ChangeDutyCycle(11)
+#     time.sleep(5)
+#     pwm.ChangeDutyCycle(7)
 
 
 if __name__ == '__main__':
+    # # Initialize of Servo
     # servoPIN = 18
     # GPIO.setwarnings(False)
     # GPIO.setmode(GPIO.BOARD)
@@ -208,7 +210,6 @@ if __name__ == '__main__':
     pointer = Pointer()
     pointer.read_from_file()
 
-    # Usage of data generator.
     # First lap
     #
     #    (o)                                   (o)
@@ -219,7 +220,21 @@ if __name__ == '__main__':
     #       8T...........H..|................1N
     #                       |
 
-    # Second lap
+    # # For SITL.
+    # if not bool(pointer.get_data()):
+    #     print(' Data file not found for the flight, data generator will be started.')
+    #     print(' 1: Normal | 2: Detect | 3: Pickup | 4: Drop | 5: Turn | Enter: Save Points | Space: Start ')
+    #     listener = keyboard.Listener(on_press=on_press)
+    #     listener.start()
+    #
+    #     while keyboard_listener_alive:
+    #         pass
+
+    detector = Detector(args.camera)
+    arm_and_takeoff(args.takeoff)
+    move()
+
+    # The second round will be like this autonomously.
     #
     #    (o)                                   (o)
     #       6N..................5D.....4P....3T
@@ -228,20 +243,6 @@ if __name__ == '__main__':
     #     .                 |                   .
     #       8T...........H..|................1N
     #                       |
-
-    if not bool(pointer.get_data()):
-        print(' Data file not found for the flight, data generator will be started.')
-        print(' 1: Normal | 2: Detect | 3: Pickup | 4: Drop | 5: Turn | Enter: Save Points | Space: Start ')
-        listener = keyboard.Listener(on_press=on_press)
-        listener.start()
-
-        while keyboard_listener_alive:
-            pass
-
-    detector = Detector(args.camera)
-    arm_and_takeoff(10)
-
-    move()
 
     pointer.get_data()['4'] = {'Feature': 'Pickup', 'Alt': 0.5, 'Lat': -35.3625873, 'Lon': 149.1643327, 'Speed': 3}
     if drop_area_find:

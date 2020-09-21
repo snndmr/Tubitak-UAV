@@ -15,4 +15,3 @@ class FPS:
 
         self.fps1sec += 1
         return self.avgFPS
-1
